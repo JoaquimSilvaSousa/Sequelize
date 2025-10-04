@@ -1,0 +1,563 @@
+Meta: Conectar aplicação com mysql
+
+0. 
+1.  TERMINAL : npm init (iniciando o package.json )
+               Digite: npm init -y 
+                       npm install express  
+                       npm install express-handlebars
+                       npm install nodemon --save-dev
+                       npm install mysql2
+
+//app.engine('handlebars', exphbs.engine())
+
+
+3 . Crie a estrutura padrão das pastas 
+
+  public
+    css
+      styles.css
+      
+  views
+    layouts
+      main.handlebars
+    home.handlebars
+  index.js 
+
+4. main.handlebars Digite
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Node.js + MySQL</title>
+    <link rel="stylesheet" href="/css/styles.css">
+  </head>
+  <body>
+    {{{ body }}}
+  </body>
+</html>
+
+
+5. home.handlebars digite
+
+<h1>Homepage</h1>
+
+
+6.  styles.css digite
+
+* {
+  font-family: Helvetica, sans-serif;
+}
+
+h1 {
+  text-align: center;
+}
+
+.form {
+  width: 450px;
+  margin: 0 auto;
+}
+
+.form-control {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0.5em;
+}
+
+.form-control label {
+  font-weight: bold;
+  margin-bottom: 0.3em;
+}
+
+.form-control input {
+  padding: 5px;
+}
+
+
+7. Index.js digite
+
+const express = require('express')
+const exphbs = require('express-handlebars')
+const mysql = require('mysql2')
+
+const app = express()
+
+app.engine('handlebars', exphbs.engine())
+app.set('view engine', 'handlebars')
+
+app.use(express.static('public'))
+
+app.get('/', function (req, res) {
+  res.render('home')
+})
+
+const conn = mysql.createConnection({
+  host: 'localhost',
+  user: 'root',
+  password: 'root',
+  database: 'nodemysql',
+})
+
+conn.connect(function (err) {
+  if (err) {
+    console.log(err)
+  }
+
+  console.log('Conectado ao MySQL!')
+
+  app.listen(3000)
+})
+
+
+
+9. no Workbench 
+
+create database nodemysql;
+
+use nodemysql;
+
+CREATE TABLE books (
+  id INT NOT NULL AUTO_INCREMENT,
+  title VARCHAR(255) NULL,
+  pageqty INT NULL,
+  PRIMARY KEY (id)
+);
+
+10. Teste a conexão: 
+ 
+ TERMINAL npm start (verifique se apresentou algum erro!)
+
+=========
+2 - inserindo dado
+=========
+
+A meta dessa etapa ser conectar nossa aplicação com banco de dados. Vamos começar com o create
+
+11. Em home.handlebars digite
+
+
+<h1>Cadastre o seu livro:</h1>
+<form class="form" action="/books/insertbook" method="POST">
+  <div class="form-control">
+    <label for="title">Título:</label>
+    <input type="text" name="title" placeholder="Título do livro">
+  </div>
+  <div class="form-control">
+    <label for="pageqty">Número de páginas:</label>
+    <input type="number" name="pageqty" placeholder="Quantas páginas o livro tem?">
+  </div>
+  <input type="submit" value="Cadastrar">
+</form>
+
+12. Em index.js precisamos criar um rota do tipo post, para isso  vamos utilizar o método para capturar informações do body. 
+
+
+app.use(
+  express.urlencoded({
+    extended: true,
+  }),
+)
+
+app.use(express.json())
+
+13. após isso, continuando no indes.js  crie a rota: 
+
+app.post('/books/insertbook', function (req, res) {
+  const title = req.body.title
+  const pageqty = req.body.pageqty
+
+  const query = `INSERT INTO books (title, pageqty) VALUES ('${title}', ${pageqty})`
+
+  conn.query(query, function (err) {
+    if (err) {
+      console.log(err)
+    }
+
+    res.redirect('/')
+  })
+})
+
+13. TERMINAL npm start digite
+
+Livro: O Fantástico mundo de Bob
+páginas: 222 
+
+
+14. Workbench  rode o comando
+
+select * from books;
+
+
+=====
+3. Resgatando dados
+=====
+
+15. Fazendo um Query para leitura de dados (Reed de Crud) . Em index.js escreva a nova rota
+
+app.get('/books', function (req, res) {
+  const query = `SELECT * FROM books`
+
+  conn.query(query, function (err, data) {
+    if (err) {
+      console.log(err)
+    }
+
+    const books = data
+
+    console.log(data)
+
+    res.render('books', { books })
+  })
+})
+
+
+16. Em views crie o arquivo books.handlebars e digite: 
+
+<h1>Livros disponíveis:</h1>
+<div class="books-container">
+  {{#each books}}
+    <div>#{{this.id}} - <span class="bold">{{this.title}}</span> - {{this.pageqty}} páginas</div>
+  {{/each}}
+</div>
+
+17. Em public adicione o css 
+
+/* BOOKS */
+.books-container {
+  width: 450px;
+  margin: 0 auto;
+}
+
+.books-container div {
+  border-bottom: 1px solid #ccc;
+  padding: 5px;
+  margin: 5px;
+}
+
+.bold {
+  font-weight: bold;
+}
+
+
+=====
+4. Dados específicos com where
+=====
+
+Nossa meta é resgatar um dado específico do banco com o id. 
+
+18. Em index.js vamos adicionar a rota /books/:id
+
+
+app.get('/books/:id', function (req, res) {
+  const id = req.params.id
+
+  const query = `SELECT * FROM books WHERE id = ${id}`
+
+  conn.query(query, function (err, data) {
+    if (err) {
+      console.log(err)
+    }
+
+    const book = data[0]
+
+    console.log(data[0])
+
+    res.render('book', { book })
+  })
+})
+
+19. Em views crie o arquivo book.handlebars
+
+<div id="book-page">
+  <a href="/books">Voltar</a>
+  <div class="container">
+    <h1>{{book.title}}</h1>
+    <p>Este livro tem {{book.pageqty}} páginas.</p>
+  </div>
+</div>
+
+Observação. Nesse momento é importante acessarmos o id através da página books.handlebars. Então
+
+20. Em books.handlebars acrecentaremos a rota dentro de cada um dos livro 
+
+Acrescente: 
+<a href="/books/
+
+Versão final completa
+
+<h1>Livros disponíveis:</h1>
+<div class="books-container">
+  {{#each books}}
+    <div>#{{this.id}} - <span class="bold"><a href="/books/{{this.id}}">{{this.title}}</a></span> - {{this.pageqty}} páginas</div>
+  {{/each}}
+</div>
+
+21 TERMINAL npm start teste a rota 
+
+http://localhost:3000/books
+
+Note que conseguimos  acessar o select do livro específico. 
+
+22. Vamos adicionar uma barra de navegação para facilitar. Na pasta layouts no arquivo main.handlebars adicione: 
+
+    <nav id="navbar">
+      <ul>
+        <li><a href="/">Cadastrar</a></li>
+        <li><a href="/books">Livros</a></li>
+      </ul>
+    </nav>
+
+23. Em css Acrescente após a font-family: Helvetica
+
+#navbar {
+  border-bottom: 1px solid #ccc;
+  padding: 1em;
+  margin-bottom: 1em;
+}
+
+#navbar ul {
+  display: flex;
+  list-style: none;
+}
+
+#navbar ul li {
+  margin-left: 1em;
+}
+
+adicione também!!! 
+
+/* BOOK */
+#book-page {
+  padding: 2em;
+}
+
+#book-page .container {
+  text-align: center;
+}
+
+
+Em  font-family: Helvetica adicione 
+
+* {
+  font-family: Helvetica, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+=====
+5. Editando dados primeiro passo. 
+=====
+
+vamos dividir a edição em 2 passo. 1 - Resgatar os dado 2 - preencher e atualizar os dados
+
+24. Em index.js digite
+
+app.get('/books/edit/:id', function (req, res) {
+  const id = req.params.id
+
+  const query = `SELECT * FROM books WHERE id = ${id}`
+
+  conn.query(query, function (err, data) {
+    if (err) {
+      console.log(err)
+    }
+
+    const book = data[0]
+
+    console.log(data[0])
+
+    res.render('editbook', { book })
+  })
+})
+
+25. Crie o arquivo editbook.handlebars
+
+
+<h1>Cadastre o seu livro:</h1>
+<form class="form" action="/books/insertbook" method="POST">
+  <input type="hidden" name="id" value="{{book.id}}">
+  <div class="form-control">
+    <label for="title">Título:</label>
+    <input type="text" name="title" placeholder="Título do livro" value="{{book.title}}">
+  </div>
+  <div class="form-control">
+    <label for="pageqty">Número de páginas:</label>
+    <input type="number" name="pageqty" placeholder="Quantas páginas o livro tem?" value="{{book.pageqty}}">
+  </div>
+  <input type="submit" value="Cadastrar">
+</form>
+
+26. Terminal npm start
+teste as rotas 
+
+  http://localhost:3000/books/edit/1
+  http://localhost:3000/books/edit/2
+  http://localhost:3000/books/edit/3
+
+  Veja que conseguimos acessar a rota mas não temos o link para ela 
+
+  27. Em book.handlebars adicione
+
+   <div class="actions">
+      <a href="/books/edit/{{book.id}}">Editar</a>
+    </div>
+
+
+27. Terminal npm start
+teste as rotas 
+
+  http://localhost:3000/books/ 
+
+  Note que agora podemos editar diretamente o livro clicando no título dele, sendo redirecionado para o formulario de edição.
+
+
+28. No css adicione:
+
+.actions {
+  margin-top: 1em;
+}
+
+=====
+6. Realizando edição do dado
+=====
+
+Para concluir, criar uma nova rota com "post"  para atualizar o dados do livro
+
+28. Em edit.handlebars  após form action Acrescente
+
+  <form class="form" action="/books/updatebook" method="POST">
+  <input type="hidden" name="id" value="{{book.id}}">
+
+29. Em index.js acrescente acima da const con 
+
+
+app.post('/books/updatebook', function (req, res) {
+  const id = req.body.id
+  const title = req.body.title
+  const pageqty = req.body.pageqty
+
+  const query = `UPDATE books SET title = '${title}', pageqty = ${pageqty} WHERE id = ${id}`
+
+  conn.query(query, function (err) {
+    if (err) {
+      console.log(err)
+    }
+
+    res.redirect(`/books/edit/${id}`)
+  })
+})
+
+30. TERMINAL 
+
+  Teste as  rotas
+
+    http://localhost:3000/books/ 
+      Clique em cada livro e tente editar o nome do livro
+
+=====
+7. Removendo dados
+=====
+Como remover não se trata de um post mas de uma ação, vamos incluir essa funcionalidade em: 
+
+31. book.handlebars acrecente 
+
+<form action="/books/remove/{{book.id}}" method="POST">
+        <input type="submit" value="Remover">
+
+32. Css acrescente
+
+.actions {
+  margin-top: 1em;
+  display: flex;
+  justify-content: center;
+}
+
+.actions a {
+  margin-right: 1em;
+}
+
+33. Em index.js 
+
+app.post('/books/remove/:id', function (req, res) {
+  const id = req.params.id
+
+  const query = `DELETE FROM books WHERE id = ${id}`
+
+  conn.query(query, function (err) {
+    if (err) {
+      console.log(err)
+    }
+
+    res.redirect(`/books`)
+  })
+})
+
+34. Terminal 
+  teste a remoção dos Livros 
+
+
+=====
+8. Connection_pool
+=====
+
+Vamos utilizar o recurso pool para otimição criando um cach e permitindo a reutilização. 
+
+35. Raiz - Crie uma pasta chamada "db" dentro dessa pasta um arquivo chamado "conn.js" e digite:
+
+const mysql = require('mysql2')
+
+const pool = mysql.createPool({
+  connectionLimit: 10, // quantiddade maximas de conexão 
+  host: 'localhost',
+  user: 'root',
+  password: '',
+  database: 'nodemysql',
+})
+
+module.exports = pool
+
+36. Em index.js substitua 
+
+substitua
+const myql = require('mysql2')
+
+Por
+
+const pool = require('./db/conn')
+
+37. Ainda em index.js delete a parte de conexão 
+
+Antes
+const conn = mysql.createConnection({
+  host: 'localhost',
+  user: 'root',
+  password: '',
+  database: 'nodemysql',
+})
+
+conn.connect(function (err) {
+  if (err) {
+    console.log(err)
+  }
+
+  console.log('Conectado ao MySQL!')
+
+  app.listen(3000)
+})
+
+
+Depois
+
+  app.listen(3000)
+
+38. Em index.js
+
+Substitua todas as observações que sobram pool por conn  e teste
+
+=====
+9. Protegendo sql injection
+=====
+
+Podemos substitir o nome e valor das variaveis por ?? e ? 

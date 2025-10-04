@@ -1,0 +1,23 @@
+{
+  "development": {
+    "username": "seu_usuario",
+    "password": "sua_senha",
+    "database": "nome_do_banco",
+    "host": "127.0.0.1",
+    "dialect": "postgres"
+  },
+  "test": {
+    "username": "seu_usuario",
+    "password": "sua_senha",
+    "database": "nome_do_banco_test",
+    "host": "127.0.0.1",
+    "dialect": "postgres"
+  },
+  "production": {
+    "username": "seu_usuario",
+    "password": "sua_senha",
+    "database": "nome_do_banco_prod",
+    "host": "127.0.0.1",
+    "dialect": "postgres"
+  }
+}
